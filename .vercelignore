@@ -1,0 +1,24 @@
+# Vercel
+.vercel
+
+# Dependencies
+node_modules
+
+# Build (we want to deploy this)
+# dist
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+
+# Temporary files
+*.tmp
+*.temp

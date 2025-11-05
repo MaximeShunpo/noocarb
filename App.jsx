@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, XAxis, YAxis, CartesianGrid, Bar, Legend, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
 import clsx from "clsx";
 
@@ -19,6 +19,17 @@ const THEME = {
   surfaceAlt: "#F8FAFC",
   success: "#10B981",
 };
+
+const numberFormatter = new Intl.NumberFormat("fr-FR");
+const compactNumberFormatter = new Intl.NumberFormat("fr-FR", {
+  notation: "compact",
+  compactDisplay: "short",
+});
+const currencyFormatter = new Intl.NumberFormat("fr-FR", {
+  style: "currency",
+  currency: "EUR",
+  maximumFractionDigits: 0,
+});
 
 const emptyForm = {
   fleet: { vehicleTypes: [] },
@@ -112,31 +123,56 @@ function Card({ title, subtitle, right, children, id, highlight = false }) {
 }
 
 function Stepper({ steps, current, onNav }) {
+  const progress = steps.length > 1 ? Math.min(100, Math.max(0, (current / (steps.length - 1)) * 100)) : 100;
   return (
-    <ol className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-9">
-      {steps.map((s, i) => {
-        const done = i < current;
-        const active = i === current;
-        return (
-          <li key={s.key}>
-            <button onClick={() => onNav?.(i)} className={clsx("w-full rounded-2xl border p-3 text-left transition bg-white", active ? "border-emerald-500" : done ? "border-emerald-200" : "border-slate-200 hover:border-slate-300")}>
-              <div className="flex items-center gap-2">
-                <div className={clsx("grid h-6 w-6 place-items-center rounded-full text-xs font-semibold", active ? "bg-emerald-500 text-white" : done ? "bg-emerald-200 text-emerald-900" : "bg-slate-200 text-slate-700")}>
-                  {i + 1}
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-wide text-slate-500">{s.kicker}</div>
-                  <div className="text-sm font-medium text-slate-800 flex items-center gap-1">
-                    {s.label}
-                    {done && <span className="text-emerald-600 text-xs">✓</span>}
+    <div className="rounded-3xl border border-white/60 bg-white/70 p-4 shadow-sm backdrop-blur">
+      <div className="relative mb-4 hidden h-1 w-full rounded-full bg-slate-100 sm:block">
+        <span className="absolute left-0 top-0 h-1 rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400 transition-all" style={{ width: `${progress}%` }} />
+      </div>
+      <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-9">
+        {steps.map((s, i) => {
+          const done = i < current;
+          const active = i === current;
+          return (
+            <li key={s.key}>
+              <button
+                onClick={() => onNav?.(i)}
+                className={clsx(
+                  "group w-full rounded-2xl border bg-white px-3 py-3 text-left shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
+                  active
+                    ? "border-emerald-500 shadow-md"
+                    : done
+                      ? "border-emerald-200 hover:border-emerald-300"
+                      : "border-slate-200 hover:border-slate-300"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={clsx(
+                      "grid h-7 w-7 place-items-center rounded-full text-xs font-semibold transition",
+                      active
+                        ? "bg-emerald-500 text-white"
+                        : done
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-slate-200 text-slate-700 group-hover:bg-slate-300"
+                    )}
+                  >
+                    {i + 1}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[10px] uppercase tracking-wide text-slate-400">{s.kicker}</div>
+                    <div className="flex items-center gap-1 text-sm font-medium text-slate-800">
+                      {s.label}
+                      {done && <span className="text-emerald-600 text-xs">✓</span>}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </button>
-          </li>
-        );
-      })}
-    </ol>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }
 
@@ -151,6 +187,18 @@ const STEPS = [
   { key: "charts", kicker: "Étape 8", label: "Graphiques & score" },
   { key: "actions", kicker: "Étape 9", label: "Pistes d'amélioration" },
 ];
+
+const STEP_HELP = {
+  flotte: "Définissez vos typologies de véhicules et leurs paramètres clés. Les indicateurs se recalculent en direct.",
+  autres: "Renseignez les hypothèses d'infrastructure et financières pour contextualiser les options.",
+  gnc: "Activez les équipements GNC pertinents pour votre station et comparez les scénarios.",
+  h2: "Précisez si l'électrolyse sur site fait partie du périmètre H₂.",
+  elec: "Ajoutez les compléments de puissance électrique nécessaires à la recharge rapide.",
+  diesel: "Indiquez si vous disposez d'une distribution Diesel interne pour calibrer les coûts.",
+  recap: "Visualisez la synthèse des données saisies et exportez la configuration.",
+  charts: "Analysez graphiquement le mix énergétique et le score mobilité.",
+  actions: "Identifiez des leviers d'amélioration avec le gain potentiel associé.",
+};
 
 function download(filename, text) {
   const element = document.createElement("a");
@@ -198,6 +246,103 @@ function vehicleIcon(type) {
   }
 }
 
+function StatCard({ label, value, hint, tone = "neutral" }) {
+  return (
+    <div
+      className={clsx(
+        "rounded-2xl border bg-white/80 p-4 shadow-sm backdrop-blur-sm",
+        tone === "accent" ? "border-emerald-200" : "border-slate-200"
+      )}
+    >
+      <div className="text-[11px] uppercase tracking-wide text-slate-400">{label}</div>
+      <div className="mt-1 text-xl font-semibold text-slate-900">{value}</div>
+      {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
+    </div>
+  );
+}
+
+function QuickStats({ metrics, ecoScore }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <StatCard label="Score mobilité" value={`${ecoScore} / 100`} hint="Mesure fictive mise à jour instantanément" tone="accent" />
+      <StatCard
+        label="Véhicules suivis"
+        value={metrics.totalVehicles ? numberFormatter.format(metrics.totalVehicles) : "—"}
+        hint={metrics.totalVehicles ? `${metrics.lowCarbonShare}% bas carbone` : "Ajoutez un type de véhicule"}
+      />
+      <StatCard
+        label="Kilométrage annuel"
+        value={metrics.totalKm ? `${compactNumberFormatter.format(metrics.totalKm)} km` : "—"}
+        hint={metrics.totalKm ? "Tous types confondus" : undefined}
+      />
+      <StatCard
+        label="CAPEX estimé"
+        value={metrics.capex ? currencyFormatter.format(metrics.capex) : "—"}
+        hint={metrics.capex ? "Somme achat véhicules" : undefined}
+      />
+    </div>
+  );
+}
+
+function SummarySidebar({ metrics, ecoScore, activeStep, nextStep, layout = "sidebar" }) {
+  const showStep = Boolean(activeStep);
+  const containerClass = layout === "sidebar" ? "sticky top-24 space-y-4" : "space-y-4";
+  return (
+    <aside className={containerClass}>
+      <div className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-emerald-600">Score mobilité</div>
+            <div className="text-3xl font-semibold text-emerald-900">{ecoScore}</div>
+          </div>
+          <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-medium text-emerald-600">
+            {metrics.totalVehicles ? `${metrics.lowCarbonShare}% bas carbone` : "Ajoutez un type"}
+          </span>
+        </div>
+        <p className="mt-3 text-xs leading-relaxed text-slate-500">
+          Ajustez la flotte ou les options pour visualiser immédiatement l'impact sur le mix et le score.
+        </p>
+      </div>
+
+      <Card title="Mix énergétique" subtitle={metrics.totalVehicles ? "Répartition actuelle" : undefined}>
+        <ul className="space-y-2">
+          {metrics.mix.length === 0 && <li className="text-xs text-slate-400">Aucun véhicule renseigné.</li>}
+          {metrics.mix.map((item) => (
+            <li key={item.type} className="text-xs text-slate-600">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{vehicleIcon(item.type)}</span>
+                  <span className="font-medium text-slate-700">{item.type}</span>
+                </div>
+                <span>{Math.round(item.share)}%</span>
+              </div>
+              <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all"
+                  style={{ width: `${Math.min(100, Math.max(item.share, item.share > 0 ? 6 : 0))}%` }}
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Card>
+
+      {showStep && (
+        <Card title="Étape en cours" subtitle={activeStep.label}>
+          <div className="space-y-3 text-xs text-slate-600">
+            <p className="leading-relaxed">{STEP_HELP[activeStep.key] ?? "Complétez les champs requis, les données se répercutent en temps réel."}</p>
+            {nextStep && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
+                <strong className="text-slate-700">À venir :</strong> {nextStep.label}
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+    </aside>
+  );
+}
+
 export default function App() {
   const [form, setForm] = useState(() => {
     const f = JSON.parse(JSON.stringify(emptyForm));
@@ -235,6 +380,15 @@ export default function App() {
   const [viewAll, setViewAll] = useState(false);
   const [openAction, setOpenAction] = useState(null);
 
+  useEffect(() => {
+    if (!viewAll) {
+      const target = document.getElementById(STEPS[step]?.key);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }, [step, viewAll]);
+
   const canContinue = useMemo(() => true, []);
 
   function update(path, value) {
@@ -269,13 +423,7 @@ export default function App() {
   }
   function exportJson() {
     const file = `noocarb-config-${new Date().toISOString().slice(0, 10)}.json`;
-    const element = document.createElement("a");
-    element.setAttribute("href", "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(form, null, 2)));
-    element.setAttribute("download", file);
-    element.style.display = "none";
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    download(file, JSON.stringify(form, null, 2));
   }
 
   // Derived / mocked analytics
@@ -304,6 +452,42 @@ export default function App() {
     }
     return Object.entries(items).map(([type, kwh]) => ({ type, kwh: Math.round(kwh) }));
   }, [form.fleet.vehicleTypes]);
+
+  const summaryMetrics = useMemo(() => {
+    const vehicles = form.fleet.vehicleTypes;
+    let totalVehicles = 0;
+    let totalKm = 0;
+    let capex = 0;
+    let lowCarbonCount = 0;
+    let dieselCount = 0;
+    const lowCarbonTypes = new Set(["Elec", "H2", "bioGNC"]);
+
+    for (const v of vehicles) {
+      const count = Number(v.count || 0) || 0;
+      const km = Number(v.distancePerYearPerVehicle_km || 0) || 0;
+      const price = Number(v.purchasePriceHT || 0) || 0;
+      totalVehicles += count;
+      totalKm += count * km;
+      capex += count * price;
+      if (lowCarbonTypes.has(v.type)) lowCarbonCount += count;
+      if (v.type === "Diesel") dieselCount += count;
+    }
+
+    const mix = fleetByType.map((item) => ({
+      type: item.name,
+      share: totalVehicles ? (item.value / totalVehicles) * 100 : 0,
+      count: item.value,
+    }));
+
+    return {
+      totalVehicles,
+      totalKm,
+      capex,
+      lowCarbonShare: totalVehicles ? Math.round((lowCarbonCount / totalVehicles) * 100) : 0,
+      dieselShare: totalVehicles ? Math.round((dieselCount / totalVehicles) * 100) : 0,
+      mix,
+    };
+  }, [form.fleet.vehicleTypes, fleetByType]);
 
   const ecoScore = useMemo(() => {
     // Fictive score out of 100. Elec and H2 considered better, Diesel worse.
@@ -453,7 +637,7 @@ export default function App() {
 
   const SectionFlotte = () => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="flotte" title="Flottes & mobilité" subtitle="Ajoutez des types de véhicules" highlight>
+      <Card id="flotte" title="Flottes & mobilité" subtitle="Ajoutez des types de véhicules" highlight={!viewAll && step === 0}>
         <div className="grid gap-4">
           {form.fleet.vehicleTypes.length === 0 && (
             <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
@@ -492,7 +676,7 @@ export default function App() {
 
   const SectionAutresEntrees = () => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="autres" title="Autres données d'entrée" subtitle="Paramètres station & finance">
+      <Card id="autres" title="Autres données d'entrée" subtitle="Paramètres station & finance" highlight={!viewAll && step === 1}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div><Label htmlFor="inletP">Pression d'entrée disponible réseau gaz naturel (bar)</Label>
             <Input id="inletP" value={form.otherInputs.gasNetworkInletPressure_bar} onChange={(v) => update("otherInputs.gasNetworkInletPressure_bar", v)} placeholder="Ex. 6" /></div>
@@ -524,7 +708,7 @@ export default function App() {
 
   const SectionGNC = () => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="gnc" title="Options GNC">
+      <Card id="gnc" title="Options GNC" highlight={!viewAll && step === 2}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div><Label>Isolation phonique + A1/R90</Label><YesNo id="a1r90" value={form.optionsGNC.soundInsulation_A1R90} onChange={(v) => update("optionsGNC.soundInsulation_A1R90", v)} /></div>
           <div><Label>Sécheur</Label><YesNo id="dryer" value={form.optionsGNC.dryer} onChange={(v) => update("optionsGNC.dryer", v)} /></div>
@@ -542,7 +726,7 @@ export default function App() {
 
   const SectionH2 = () => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="h2" title="Options H₂">
+      <Card id="h2" title="Options H₂" highlight={!viewAll && step === 3}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div><Label>Électrolyseur sur site</Label><YesNo id="elec" value={form.optionsH2.onsiteElectrolyser} onChange={(v) => update("optionsH2.onsiteElectrolyser", v)} /></div>
         </div>
@@ -552,7 +736,7 @@ export default function App() {
 
   const SectionElec = () => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="elec" title="Options Élec">
+      <Card id="elec" title="Options Élec" highlight={!viewAll && step === 4}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div><Label htmlFor="fastkW">Borne de recharge rapide en complément (kW)</Label>
             <Input id="fastkW" value={form.optionElec.fastChargePower_kW} onChange={(v) => update("optionElec.fastChargePower_kW", v)} placeholder="Ex. 150" /></div>
@@ -563,7 +747,7 @@ export default function App() {
 
   const SectionDiesel = () => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="diesel" title="Option Diesel" subtitle="Détermine la source de prix (cuve vs pompe)">
+      <Card id="diesel" title="Option Diesel" subtitle="Détermine la source de prix (cuve vs pompe)" highlight={!viewAll && step === 5}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div><Label>Cuve et station sur site ?</Label><YesNo id="tank" value={form.optionDiesel.tankAndStationOnSite} onChange={(v) => update("optionDiesel.tankAndStationOnSite", v)} /></div>
         </div>
@@ -573,7 +757,7 @@ export default function App() {
 
   const SectionRecap = () => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="recap" title="Récapitulatif" subtitle="Vue d'ensemble avec icônes">
+      <Card id="recap" title="Récapitulatif" subtitle="Vue d'ensemble avec icônes" highlight={!viewAll && step === 6}>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div>
             <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><span>🚚</span> Flottes & mobilité</h4>
@@ -632,7 +816,7 @@ export default function App() {
   const COLORS = ["#10B981", "#0EA5E9", "#F59E0B", "#6366F1", "#EF4444", "#14B8A6", "#84CC16"];
   const SectionCharts = () => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="charts" title="Graphiques & score" subtitle="Visualiser la mobilité et un score (fictif) sur 100">
+      <Card id="charts" title="Graphiques & score" subtitle="Visualiser la mobilité et un score (fictif) sur 100" highlight={!viewAll && step === 7}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 grid place-items-center rounded-full border border-emerald-300 text-xl font-bold text-emerald-700">{ecoScore}</div>
@@ -677,13 +861,15 @@ export default function App() {
             <h4 className="mb-2 text-sm font-semibold text-slate-700">Profil d'impact (fictif)</h4>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={[
-                  { subject: "CO₂", A: 100 - ecoScore },
-                  { subject: "Coût énergie", A: 80 - ecoScore * 0.5 },
-                  { subject: "Autonomie", A: 40 + (100 - ecoScore) * 0.2 },
-                  { subject: "Capillarité", A: 50 },
-                  { subject: "Maturité tech", A: 60 },
-                ]}>
+                <RadarChart
+                  data={[
+                    { subject: "CO₂", A: 100 - ecoScore },
+                    { subject: "Coût énergie", A: 80 - ecoScore * 0.5 },
+                    { subject: "Autonomie", A: 40 + (100 - ecoScore) * 0.2 },
+                    { subject: "Capillarité", A: 50 },
+                    { subject: "Maturité tech", A: 60 },
+                  ]}
+                >
                   <PolarGrid />
                   <PolarAngleAxis dataKey="subject" />
                   <PolarRadiusAxis />
@@ -700,7 +886,7 @@ export default function App() {
 
   const SectionActions = () => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="actions" title="Pistes d'amélioration" subtitle="Note actuelle et actions pour gagner des points">
+      <Card id="actions" title="Pistes d'amélioration" subtitle="Note actuelle et actions pour gagner des points" highlight={!viewAll && step === 8}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 grid place-items-center rounded-full border border-emerald-300 text-xl font-bold text-emerald-700">{ecoScore}</div>
@@ -754,39 +940,44 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto mt-6 max-w-6xl">
+      <main className="mx-auto mt-6 max-w-6xl space-y-6">
         <Stepper steps={STEPS} current={step} onNav={(i) => { setViewAll(false); setStep(i); }} />
+        <QuickStats metrics={summaryMetrics} ecoScore={ecoScore} />
 
-        {!viewAll && (
-          <>
-            {step === 0 && <SectionFlotte />}
-            {step === 1 && <SectionAutresEntrees />}
-            {step === 2 && <SectionGNC />}
-            {step === 3 && <SectionH2 />}
-            {step === 4 && <SectionElec />}
-            {step === 5 && <SectionDiesel />}
-            {step === 6 && <SectionRecap />}
-            {step === 7 && <SectionCharts />}
-            {step === 8 && <SectionActions />}
-            <div className="mx-auto mt-6 flex max-w-6xl items-center justify-between">
-              <button onClick={() => setStep((s) => Math.max(s - 1, 0))} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Précédent</button>
-              <div className="text-sm text-slate-500">Étape {step + 1} / {STEPS.length}</div>
-              <button onClick={() => setStep((s) => Math.min(s + 1, STEPS.length - 1))} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700">Suivant</button>
+        {!viewAll ? (
+          <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-6">
+            <div className="space-y-6">
+              {step === 0 && <SectionFlotte />}
+              {step === 1 && <SectionAutresEntrees />}
+              {step === 2 && <SectionGNC />}
+              {step === 3 && <SectionH2 />}
+              {step === 4 && <SectionElec />}
+              {step === 5 && <SectionDiesel />}
+              {step === 6 && <SectionRecap />}
+              {step === 7 && <SectionCharts />}
+              {step === 8 && <SectionActions />}
+              <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+                <button onClick={() => setStep((s) => Math.max(s - 1, 0))} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Précédent</button>
+                <div>Étape {step + 1} / {STEPS.length}</div>
+                <button onClick={() => setStep((s) => Math.min(s + 1, STEPS.length - 1))} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700">Suivant</button>
+              </div>
             </div>
-          </>
-        )}
-
-        {viewAll && (
-          <div className="grid grid-cols-1 gap-8">
-            <SectionFlotte />
-            <SectionAutresEntrees />
-            <SectionGNC />
-            <SectionH2 />
-            <SectionElec />
-            <SectionDiesel />
-            <SectionRecap />
-            <SectionCharts />
-            <SectionActions />
+            <SummarySidebar metrics={summaryMetrics} ecoScore={ecoScore} activeStep={STEPS[step]} nextStep={STEPS[step + 1]} />
+          </div>
+        ) : (
+          <div className="space-y-8">
+            <SummarySidebar metrics={summaryMetrics} ecoScore={ecoScore} activeStep={null} nextStep={null} layout="inline" />
+            <div className="grid grid-cols-1 gap-8">
+              <SectionFlotte />
+              <SectionAutresEntrees />
+              <SectionGNC />
+              <SectionH2 />
+              <SectionElec />
+              <SectionDiesel />
+              <SectionRecap />
+              <SectionCharts />
+              <SectionActions />
+            </div>
           </div>
         )}
       </main>

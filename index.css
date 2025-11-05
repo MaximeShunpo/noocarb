@@ -13,3 +13,11 @@
   --nc-surface: #FFFFFF;
   --nc-surfaceAlt: #F8FAFC;
 }
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px circle at 10% 10%, rgba(16, 185, 129, 0.12), transparent),
+    radial-gradient(900px circle at 90% 0%, rgba(14, 165, 233, 0.14), transparent),
+    var(--nc-surfaceAlt);
+}

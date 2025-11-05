@@ -20,6 +20,15 @@ const THEME = {
   success: "#10B981",
 };
 
+const numberFormatter = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
+
+function cloneFormState(form) {
+  if (typeof structuredClone === "function") {
+    return structuredClone(form);
+  }
+  return JSON.parse(JSON.stringify(form));
+}
+
 const emptyForm = {
   fleet: { vehicleTypes: [] },
   otherInputs: {
@@ -113,30 +122,124 @@ function Card({ title, subtitle, right, children, id, highlight = false }) {
 
 function Stepper({ steps, current, onNav }) {
   return (
-    <ol className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-9">
-      {steps.map((s, i) => {
-        const done = i < current;
-        const active = i === current;
-        return (
-          <li key={s.key}>
-            <button onClick={() => onNav?.(i)} className={clsx("w-full rounded-2xl border p-3 text-left transition bg-white", active ? "border-emerald-500" : done ? "border-emerald-200" : "border-slate-200 hover:border-slate-300")}>
-              <div className="flex items-center gap-2">
-                <div className={clsx("grid h-6 w-6 place-items-center rounded-full text-xs font-semibold", active ? "bg-emerald-500 text-white" : done ? "bg-emerald-200 text-emerald-900" : "bg-slate-200 text-slate-700")}>
-                  {i + 1}
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-wide text-slate-500">{s.kicker}</div>
-                  <div className="text-sm font-medium text-slate-800 flex items-center gap-1">
-                    {s.label}
-                    {done && <span className="text-emerald-600 text-xs">✓</span>}
+    <div className="mb-6 -mx-2 overflow-x-auto px-2">
+      <ol className="grid min-w-[680px] grid-cols-9 gap-3 sm:min-w-0 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-9">
+        {steps.map((s, i) => {
+          const done = i < current;
+          const active = i === current;
+          return (
+            <li key={s.key}>
+              <button
+                onClick={() => onNav?.(i)}
+                className={clsx(
+                  "w-full rounded-2xl border p-3 text-left transition bg-white shadow-sm",
+                  active ? "border-emerald-500 shadow-emerald-100" : done ? "border-emerald-200" : "border-slate-200 hover:border-slate-300"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className={clsx(
+                      "grid h-6 w-6 place-items-center rounded-full text-xs font-semibold",
+                      active ? "bg-emerald-500 text-white" : done ? "bg-emerald-200 text-emerald-900" : "bg-slate-200 text-slate-700"
+                    )}
+                  >
+                    {i + 1}
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wide text-slate-500">{s.kicker}</div>
+                    <div className="text-sm font-medium text-slate-800 flex items-center gap-1">
+                      {s.label}
+                      {done && <span className="text-emerald-600 text-xs">✓</span>}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </button>
-          </li>
-        );
-      })}
-    </ol>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+function StatsBar({ items }) {
+  if (!items?.length) return null;
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {items.map((item) => (
+        <div key={item.label} className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-4 shadow-sm backdrop-blur">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-50 via-transparent to-sky-50 opacity-80" aria-hidden />
+          <div className="relative flex items-start justify-between">
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700/80">{item.label}</div>
+              <div className={clsx("mt-1 text-2xl font-semibold", item.accent === "positive" ? "text-emerald-600" : item.accent === "warning" ? "text-amber-600" : "text-slate-900")}>{item.value}</div>
+              {item.sub && <div className="mt-1 text-xs text-slate-500">{item.sub}</div>}
+            </div>
+            <span className="text-xl">{item.icon}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SummaryPanel({ totalSteps, stepIndex, currentStep, nextStep, topVehicles, enabledOptions }) {
+  const progress = Math.round(((stepIndex + 1) / totalSteps) * 100);
+  return (
+    <aside className="space-y-4 lg:sticky lg:top-28">
+      <Card title="Progression" subtitle={`${currentStep.kicker} • ${progress}% du parcours`} highlight>
+        <div className="space-y-3 text-sm text-slate-600">
+          <div className="flex items-center justify-between text-sm font-medium text-slate-800">
+            <span>{currentStep.label}</span>
+            <span className="text-xs text-slate-500">{stepIndex + 1} / {totalSteps}</span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-slate-100">
+            <div className="h-2 rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400" style={{ width: `${progress}%` }} />
+          </div>
+          {nextStep ? (
+            <p className="text-xs text-slate-500">À suivre : {nextStep.label}</p>
+          ) : (
+            <p className="text-xs text-emerald-600">Récapitulatif prêt à exporter</p>
+          )}
+        </div>
+      </Card>
+
+      <Card title="Top flotte" subtitle="Principaux types déclarés">
+        <ul className="space-y-3 text-sm text-slate-600">
+          {topVehicles.length ? (
+            topVehicles.map((v) => (
+              <li key={v.id} className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{vehicleIcon(v.type)}</span>
+                  <div>
+                    <div className="font-medium text-slate-800">{v.label || v.type}</div>
+                    <div className="text-xs text-slate-500">{v.type}</div>
+                  </div>
+                </div>
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">{numberFormatter.format(Number(v.count || 0))} véh.</span>
+              </li>
+            ))
+          ) : (
+            <li className="text-xs text-slate-400">Ajoutez un type de véhicule pour voir la synthèse.</li>
+          )}
+        </ul>
+      </Card>
+
+      <Card title="Options activées" subtitle={`${enabledOptions.length} option${enabledOptions.length > 1 ? "s" : ""} sélectionnée${enabledOptions.length > 1 ? "s" : ""}`}>
+        <ul className="space-y-2 text-sm text-slate-600">
+          {enabledOptions.length ? (
+            enabledOptions.map((opt) => (
+              <li key={opt} className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                <span>{opt}</span>
+              </li>
+            ))
+          ) : (
+            <li className="text-xs text-slate-400">Activez une option pour la retrouver ici.</li>
+          )}
+        </ul>
+      </Card>
+    </aside>
   );
 }
 
@@ -239,7 +342,7 @@ export default function App() {
 
   function update(path, value) {
     setForm((prev) => {
-      const next = { ...prev };
+      const next = cloneFormState(prev);
       const keys = path.split(".");
       let obj = next;
       for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]];
@@ -249,22 +352,22 @@ export default function App() {
   }
   function push(path, item) {
     setForm((prev) => {
-      const next = { ...prev };
+      const next = cloneFormState(prev);
       const keys = path.split(".");
       let obj = next;
       for (let i = 0; i < keys.length; i++) obj = obj[keys[i]];
       obj.push(item);
-      return { ...next };
+      return next;
     });
   }
   function removeAt(path, index) {
     setForm((prev) => {
-      const next = { ...prev };
+      const next = cloneFormState(prev);
       const keys = path.split(".");
       let obj = next;
       for (let i = 0; i < keys.length; i++) obj = obj[keys[i]];
       obj.splice(index, 1);
-      return { ...next };
+      return next;
     });
   }
   function exportJson() {
@@ -354,6 +457,69 @@ export default function App() {
       },
     ];
   }, []);
+
+    const enabledOptions = useMemo(() => {
+      const list = [];
+      const { optionsGNC, optionsH2, optionElec, optionDiesel } = form;
+      if (optionsGNC.soundInsulation_A1R90) list.push("Isolation phonique A1/R90");
+      if (optionsGNC.dryer) list.push("Sécheur");
+      if (optionsGNC.dispenserType) list.push(`Borne : ${optionsGNC.dispenserType}`);
+      if (optionsGNC.NGV2_fastCharge) list.push("NGV2 (charge rapide)");
+      if (optionsGNC.placeLighting) list.push("Éclairage à la place");
+      if (optionsGNC.containerizedCompressorBlock) list.push("Bloc compresseur containerisé");
+      if (optionsGNC.semiRapidBackup) list.push("Backup semi-rapide");
+      if (optionsGNC.compressorRedundancy) list.push("Redondance compresseur");
+      if (optionsGNC.storage3Banks) list.push("Stockage 3 bancs");
+      if (optionsH2.onsiteElectrolyser) list.push("Électrolyseur sur site");
+      if (optionElec.fastChargePower_kW) list.push(`Recharge rapide ${optionElec.fastChargePower_kW} kW`);
+      if (optionDiesel.tankAndStationOnSite) list.push("Cuve + station Diesel sur site");
+      return list;
+    }, [form.optionsGNC, form.optionsH2, form.optionElec, form.optionDiesel]);
+
+    const stats = useMemo(() => {
+      const vehicles = form.fleet.vehicleTypes;
+      const totalVehicles = vehicles.reduce((acc, v) => acc + Number(v.count || 0), 0);
+      const lowCarbonTypes = new Set(["Elec", "H2", "bioGNC"]);
+      const lowCarbonVehicles = vehicles.reduce((acc, v) => acc + (lowCarbonTypes.has(v.type) ? Number(v.count || 0) : 0), 0);
+      const lowCarbonShare = totalVehicles ? Math.round((lowCarbonVehicles / totalVehicles) * 100) : 0;
+      const totalKm = vehicles.reduce((acc, v) => acc + Number(v.distancePerYearPerVehicle_km || 0) * Number(v.count || 0), 0);
+
+      return [
+        {
+          icon: "🚗",
+          label: "Véhicules suivis",
+          value: totalVehicles ? numberFormatter.format(totalVehicles) : "—",
+          sub: totalVehicles ? `${numberFormatter.format(totalKm)} km/an` : "Ajoutez votre flotte",
+        },
+        {
+          icon: "🌱",
+          label: "Part faible carbone",
+          value: totalVehicles ? `${lowCarbonShare}%` : "—",
+          sub: totalVehicles ? `${numberFormatter.format(lowCarbonVehicles)} véh. Elec/H₂/bioGNC` : "Renseignez une énergie bas-carbone",
+          accent: lowCarbonShare >= 50 ? "positive" : lowCarbonShare >= 25 ? "warning" : undefined,
+        },
+        {
+          icon: "🧩",
+          label: "Options activées",
+          value: numberFormatter.format(enabledOptions.length),
+          sub: enabledOptions.length ? "Configuration en cours" : "Aucune option sélectionnée",
+          accent: enabledOptions.length ? "positive" : undefined,
+        },
+        {
+          icon: "⭐",
+          label: "Score mobilité (fictif)",
+          value: ecoScore,
+          sub: ecoScore >= 70 ? "Progression en bonne voie" : "Activez des leviers pour progresser",
+          accent: ecoScore >= 70 ? "positive" : ecoScore >= 40 ? "warning" : undefined,
+        },
+      ];
+    }, [form.fleet.vehicleTypes, enabledOptions.length, ecoScore]);
+
+    const topVehicles = useMemo(() => {
+      return [...form.fleet.vehicleTypes]
+        .sort((a, b) => Number(b.count || 0) - Number(a.count || 0))
+        .slice(0, 3);
+    }, [form.fleet.vehicleTypes]);
 
   // Sections (1–7 abbreviated: we keep full fleet & others & options + recap)
   function VehicleFields({ v, idx }) {
@@ -451,9 +617,9 @@ export default function App() {
     );
   }
 
-  const SectionFlotte = () => (
+  const SectionFlotte = ({ active = false }) => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="flotte" title="Flottes & mobilité" subtitle="Ajoutez des types de véhicules" highlight>
+      <Card id="flotte" title="Flottes & mobilité" subtitle="Ajoutez des types de véhicules" highlight={active}>
         <div className="grid gap-4">
           {form.fleet.vehicleTypes.length === 0 && (
             <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
@@ -490,9 +656,9 @@ export default function App() {
     </div>
   );
 
-  const SectionAutresEntrees = () => (
+  const SectionAutresEntrees = ({ active = false }) => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="autres" title="Autres données d'entrée" subtitle="Paramètres station & finance">
+      <Card id="autres" title="Autres données d'entrée" subtitle="Paramètres station & finance" highlight={active}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div><Label htmlFor="inletP">Pression d'entrée disponible réseau gaz naturel (bar)</Label>
             <Input id="inletP" value={form.otherInputs.gasNetworkInletPressure_bar} onChange={(v) => update("otherInputs.gasNetworkInletPressure_bar", v)} placeholder="Ex. 6" /></div>
@@ -522,9 +688,9 @@ export default function App() {
     </div>
   );
 
-  const SectionGNC = () => (
+  const SectionGNC = ({ active = false }) => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="gnc" title="Options GNC">
+      <Card id="gnc" title="Options GNC" highlight={active}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div><Label>Isolation phonique + A1/R90</Label><YesNo id="a1r90" value={form.optionsGNC.soundInsulation_A1R90} onChange={(v) => update("optionsGNC.soundInsulation_A1R90", v)} /></div>
           <div><Label>Sécheur</Label><YesNo id="dryer" value={form.optionsGNC.dryer} onChange={(v) => update("optionsGNC.dryer", v)} /></div>
@@ -540,9 +706,9 @@ export default function App() {
     </div>
   );
 
-  const SectionH2 = () => (
+  const SectionH2 = ({ active = false }) => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="h2" title="Options H₂">
+      <Card id="h2" title="Options H₂" highlight={active}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div><Label>Électrolyseur sur site</Label><YesNo id="elec" value={form.optionsH2.onsiteElectrolyser} onChange={(v) => update("optionsH2.onsiteElectrolyser", v)} /></div>
         </div>
@@ -550,9 +716,9 @@ export default function App() {
     </div>
   );
 
-  const SectionElec = () => (
+  const SectionElec = ({ active = false }) => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="elec" title="Options Élec">
+      <Card id="elec" title="Options Élec" highlight={active}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div><Label htmlFor="fastkW">Borne de recharge rapide en complément (kW)</Label>
             <Input id="fastkW" value={form.optionElec.fastChargePower_kW} onChange={(v) => update("optionElec.fastChargePower_kW", v)} placeholder="Ex. 150" /></div>
@@ -561,9 +727,9 @@ export default function App() {
     </div>
   );
 
-  const SectionDiesel = () => (
+  const SectionDiesel = ({ active = false }) => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="diesel" title="Option Diesel" subtitle="Détermine la source de prix (cuve vs pompe)">
+      <Card id="diesel" title="Option Diesel" subtitle="Détermine la source de prix (cuve vs pompe)" highlight={active}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div><Label>Cuve et station sur site ?</Label><YesNo id="tank" value={form.optionDiesel.tankAndStationOnSite} onChange={(v) => update("optionDiesel.tankAndStationOnSite", v)} /></div>
         </div>
@@ -571,9 +737,9 @@ export default function App() {
     </div>
   );
 
-  const SectionRecap = () => (
+  const SectionRecap = ({ active = false }) => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="recap" title="Récapitulatif" subtitle="Vue d'ensemble avec icônes">
+      <Card id="recap" title="Récapitulatif" subtitle="Vue d'ensemble avec icônes" highlight={active}>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div>
             <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><span>🚚</span> Flottes & mobilité</h4>
@@ -630,9 +796,9 @@ export default function App() {
   );
 
   const COLORS = ["#10B981", "#0EA5E9", "#F59E0B", "#6366F1", "#EF4444", "#14B8A6", "#84CC16"];
-  const SectionCharts = () => (
+  const SectionCharts = ({ active = false }) => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="charts" title="Graphiques & score" subtitle="Visualiser la mobilité et un score (fictif) sur 100">
+      <Card id="charts" title="Graphiques & score" subtitle="Visualiser la mobilité et un score (fictif) sur 100" highlight={active}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 grid place-items-center rounded-full border border-emerald-300 text-xl font-bold text-emerald-700">{ecoScore}</div>
@@ -698,9 +864,9 @@ export default function App() {
     </div>
   );
 
-  const SectionActions = () => (
+  const SectionActions = ({ active = false }) => (
     <div className="grid grid-cols-1 gap-6">
-      <Card id="actions" title="Pistes d'amélioration" subtitle="Note actuelle et actions pour gagner des points">
+      <Card id="actions" title="Pistes d'amélioration" subtitle="Note actuelle et actions pour gagner des points" highlight={active}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 grid place-items-center rounded-full border border-emerald-300 text-xl font-bold text-emerald-700">{ecoScore}</div>
@@ -734,62 +900,92 @@ export default function App() {
     </div>
   );
 
+  const totalSteps = STEPS.length;
+  const currentStep = STEPS[step] ?? STEPS[0];
+  const nextStep = step + 1 < totalSteps ? STEPS[step + 1] : null;
+
   return (
-    <div className="min-h-screen w-full bg-[--nc-surfaceAlt] p-4 sm:p-6 lg:p-10">
-      <header className="mx-auto max-w-6xl">
-        <div className="mb-4 h-2 w-full rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400" />
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Noocarb • Config mobilité & options</h1>
-            <p className="mt-1 text-sm text-slate-500">Ajoutez vos types de véhicules, renseignez les paramètres et validez.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={exportJson} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700">Exporter JSON</button>
-            <button onClick={() => setForm((_) => ({ ...emptyForm, fleet: { vehicleTypes: [defaultVehicle("Diesel")] } }))} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Réinitialiser</button>
-            <div className="ml-2 inline-flex overflow-hidden rounded-xl border border-slate-200">
-              <button className={clsx("px-3 py-2 text-sm", !viewAll ? "bg-emerald-500 text-white" : "bg-white text-slate-700")} onClick={() => setViewAll(false)}>Wizard</button>
-              <button className={clsx("px-3 py-2 text-sm", viewAll ? "bg-emerald-500 text-white" : "bg-white text-slate-700")} onClick={() => setViewAll(true)}>Tout afficher</button>
+    <div className="relative min-h-screen w-full overflow-hidden bg-[--nc-surfaceAlt]">
+      <div className="pointer-events-none absolute inset-x-0 top-[-35%] h-[420px] bg-gradient-to-br from-emerald-100 via-transparent to-sky-100 opacity-70 blur-3xl" aria-hidden />
+      <div className="relative z-10 p-4 sm:p-6 lg:p-10">
+        <header className="mx-auto max-w-6xl">
+          <div className="mb-4 h-2 w-full rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400" />
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Noocarb • Config mobilité & options</h1>
+              <p className="mt-1 text-sm text-slate-500">Ajoutez vos types de véhicules, renseignez les paramètres et validez.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={exportJson} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700">Exporter JSON</button>
+              <button onClick={() => setForm((_) => ({ ...emptyForm, fleet: { vehicleTypes: [defaultVehicle("Diesel")] } }))} className="rounded-xl border border-slate-200 bg-white/90 px-4 py-2 text-sm font-medium text-slate-700 backdrop-blur hover:bg-white">Réinitialiser</button>
+              <div className="ml-2 inline-flex overflow-hidden rounded-xl border border-slate-200 bg-white/80 shadow-sm backdrop-blur">
+                <button className={clsx("px-3 py-2 text-sm", !viewAll ? "bg-emerald-500 text-white" : "text-slate-700")} onClick={() => setViewAll(false)}>Wizard</button>
+                <button className={clsx("px-3 py-2 text-sm", viewAll ? "bg-emerald-500 text-white" : "text-slate-700")} onClick={() => setViewAll(true)}>Tout afficher</button>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
-
-      <main className="mx-auto mt-6 max-w-6xl">
-        <Stepper steps={STEPS} current={step} onNav={(i) => { setViewAll(false); setStep(i); }} />
-
-        {!viewAll && (
-          <>
-            {step === 0 && <SectionFlotte />}
-            {step === 1 && <SectionAutresEntrees />}
-            {step === 2 && <SectionGNC />}
-            {step === 3 && <SectionH2 />}
-            {step === 4 && <SectionElec />}
-            {step === 5 && <SectionDiesel />}
-            {step === 6 && <SectionRecap />}
-            {step === 7 && <SectionCharts />}
-            {step === 8 && <SectionActions />}
-            <div className="mx-auto mt-6 flex max-w-6xl items-center justify-between">
-              <button onClick={() => setStep((s) => Math.max(s - 1, 0))} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Précédent</button>
-              <div className="text-sm text-slate-500">Étape {step + 1} / {STEPS.length}</div>
-              <button onClick={() => setStep((s) => Math.min(s + 1, STEPS.length - 1))} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700">Suivant</button>
-            </div>
-          </>
-        )}
-
-        {viewAll && (
-          <div className="grid grid-cols-1 gap-8">
-            <SectionFlotte />
-            <SectionAutresEntrees />
-            <SectionGNC />
-            <SectionH2 />
-            <SectionElec />
-            <SectionDiesel />
-            <SectionRecap />
-            <SectionCharts />
-            <SectionActions />
+          <div className="mt-6">
+            <StatsBar items={stats} />
           </div>
-        )}
-      </main>
+        </header>
+
+        <main className="mx-auto mt-6 max-w-6xl">
+          <Stepper steps={STEPS} current={step} onNav={(i) => { setViewAll(false); setStep(i); }} />
+
+          {!viewAll ? (
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(260px,1fr)]">
+              <div className="space-y-6">
+                {step === 0 && <SectionFlotte active />}
+                {step === 1 && <SectionAutresEntrees active />}
+                {step === 2 && <SectionGNC active />}
+                {step === 3 && <SectionH2 active />}
+                {step === 4 && <SectionElec active />}
+                {step === 5 && <SectionDiesel active />}
+                {step === 6 && <SectionRecap active />}
+                {step === 7 && <SectionCharts active />}
+                {step === 8 && <SectionActions active />}
+
+                <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm backdrop-blur">
+                  <button onClick={() => setStep((s) => Math.max(s - 1, 0))} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Précédent</button>
+                  <div className="text-sm text-slate-500">Étape {step + 1} / {totalSteps}</div>
+                  <button onClick={() => setStep((s) => Math.min(s + 1, totalSteps - 1))} disabled={!canContinue} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">Suivant</button>
+                </div>
+              </div>
+
+              <SummaryPanel
+                totalSteps={totalSteps}
+                stepIndex={step}
+                currentStep={currentStep}
+                nextStep={nextStep}
+                topVehicles={topVehicles}
+                enabledOptions={enabledOptions}
+              />
+            </div>
+          ) : (
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(260px,1fr)]">
+              <div className="space-y-8">
+                <SectionFlotte active={step === 0} />
+                <SectionAutresEntrees active={step === 1} />
+                <SectionGNC active={step === 2} />
+                <SectionH2 active={step === 3} />
+                <SectionElec active={step === 4} />
+                <SectionDiesel active={step === 5} />
+                <SectionRecap active={step === 6} />
+                <SectionCharts active={step === 7} />
+                <SectionActions active={step === 8} />
+              </div>
+              <SummaryPanel
+                totalSteps={totalSteps}
+                stepIndex={step}
+                currentStep={currentStep}
+                nextStep={nextStep}
+                topVehicles={topVehicles}
+                enabledOptions={enabledOptions}
+              />
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

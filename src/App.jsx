@@ -36,24 +36,24 @@ export default function App() {
     <div className="min-h-screen w-full bg-[--nc-surfaceAlt] p-4 sm:p-6 lg:p-10">
       <header className="mx-auto max-w-6xl">
         <div className="mb-4 h-2 w-full rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400" />
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <img 
               src="https://upload.wikimedia.org/wikipedia/fr/thumb/a/a3/Logo_GRDF_couleur_sans_descripteur_2024%28PNG%29.png/2560px-Logo_GRDF_couleur_sans_descripteur_2024%28PNG%29.png" 
               alt="GRDF" 
-              className="h-12 w-auto object-contain"
+              className="h-10 w-auto object-contain sm:h-12"
             />
-          <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Config mobilité & options</h1>
-            <p className="mt-1 text-sm text-slate-500">Ajoutez vos types de véhicules, renseignez les paramètres et validez.</p>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">Config mobilité & options</h1>
+              <p className="mt-1 text-xs text-slate-500 sm:text-sm">Ajoutez vos types de véhicules, renseignez les paramètres et validez.</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => exportJson(form)} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-700">Exporter JSON</button>
-            <button onClick={reset} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Réinitialiser</button>
-            <div className="ml-2 inline-flex overflow-hidden rounded-xl border border-slate-200">
-              <button className={clsx("px-3 py-2 text-sm", !viewAll ? "bg-emerald-500 text-white" : "bg-white text-slate-700")} onClick={() => setViewAll(false)}>Wizard</button>
-              <button className={clsx("px-3 py-2 text-sm", viewAll ? "bg-emerald-500 text-white" : "bg-white text-slate-700")} onClick={() => setViewAll(true)}>Tout afficher</button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={() => exportJson(form)} className="flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-emerald-700 sm:flex-none sm:px-4 sm:text-sm">Exporter JSON</button>
+            <button onClick={reset} className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 sm:flex-none sm:px-4 sm:text-sm">Réinitialiser</button>
+            <div className="flex w-full overflow-hidden rounded-xl border border-slate-200 sm:ml-2 sm:w-auto">
+              <button className={clsx("flex-1 px-3 py-2 text-xs sm:text-sm", !viewAll ? "bg-emerald-500 text-white" : "bg-white text-slate-700")} onClick={() => setViewAll(false)}>Wizard</button>
+              <button className={clsx("flex-1 px-3 py-2 text-xs sm:text-sm", viewAll ? "bg-emerald-500 text-white" : "bg-white text-slate-700")} onClick={() => setViewAll(true)}>Tout afficher</button>
             </div>
           </div>
         </div>

@@ -10,7 +10,7 @@ export default function Stepper({ steps, current, onNav }) {
           <li key={s.key}>
             <button onClick={() => onNav?.(i)} className={clsx("w-full rounded-2xl border p-3 text-left transition bg-white", active ? "border-emerald-500" : done ? "border-emerald-200" : "border-slate-200 hover:border-slate-300")}>
               <div className="flex items-center gap-2">
-                <div className={clsx("grid h-6 w-6 place-items-center rounded-full text-xs font-semibold", active ? "bg-emerald-500 text-white" : done ? "bg-emerald-200 text-emerald-900" : "bg-slate-200 text-slate-700")}>
+                <div className={clsx("flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold flex-shrink-0", active ? "bg-emerald-500 text-white" : done ? "bg-emerald-200 text-emerald-900" : "bg-slate-200 text-slate-700")}>
                   {i + 1}
                 </div>
                 <div>

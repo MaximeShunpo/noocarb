@@ -37,7 +37,6 @@ export const STEPS = [
   { key: "elec", kicker: "Étape 5", label: "Options Élec" },
   { key: "diesel", kicker: "Étape 6", label: "Option Diesel" },
   { key: "recap", kicker: "Étape 7", label: "Récap & export" },
-  { key: "charts", kicker: "Étape 8", label: "Graphiques & score" },
-  { key: "actions", kicker: "Étape 9", label: "Pistes d'amélioration" },
+  { key: "charts", kicker: "Étape 8", label: "Graphiques & comparaison" },
 ];
 

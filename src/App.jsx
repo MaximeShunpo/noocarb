@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import clsx from "clsx";
 import { Stepper } from "./components/ui";
 import {
@@ -10,13 +10,11 @@ import {
   SectionDiesel,
   SectionRecap,
   SectionCharts,
-  SectionActions,
 } from "./components/sections";
 import { STEPS } from "./constants/form";
 import { useFormState } from "./hooks/useFormState";
 import { useFormData } from "./hooks/useFormData";
 import { exportJson } from "./utils/helpers";
-import { getActions } from "./utils/actions";
 
 /**
  * Noocarb – Maquette web‑app (Mobilité + Options + Graphiques + Actions)
@@ -25,12 +23,9 @@ import { getActions } from "./utils/actions";
 
 export default function App() {
   const { form, update, push, removeAt, reset } = useFormState();
-  const { fleetByType, energyPerType, ecoScore, costComparison } = useFormData(form);
+  const { fleetByType, energyPerType, ecoScore, costComparison, gncStationCost } = useFormData(form);
   const [step, setStep] = useState(0);
   const [viewAll, setViewAll] = useState(false);
-  const [openAction, setOpenAction] = useState(null);
-
-  const actions = useMemo(() => getActions(), []);
 
   return (
     <div className="min-h-screen w-full bg-[--nc-surfaceAlt] p-4 sm:p-6 lg:p-10">
@@ -71,8 +66,7 @@ export default function App() {
             {step === 4 && <SectionElec form={form} update={update} />}
             {step === 5 && <SectionDiesel form={form} update={update} />}
             {step === 6 && <SectionRecap form={form} />}
-            {step === 7 && <SectionCharts ecoScore={ecoScore} fleetByType={fleetByType} costComparison={costComparison} />}
-            {step === 8 && <SectionActions ecoScore={ecoScore} actions={actions} openAction={openAction} setOpenAction={setOpenAction} />}
+            {step === 7 && <SectionCharts ecoScore={ecoScore} fleetByType={fleetByType} costComparison={costComparison} gncStationCost={gncStationCost} />}
             <div className="mx-auto mt-6 flex max-w-6xl items-center justify-between">
               <button onClick={() => setStep((s) => Math.max(s - 1, 0))} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Précédent</button>
               <div className="text-sm text-slate-500">Étape {step + 1} / {STEPS.length}</div>
@@ -90,8 +84,7 @@ export default function App() {
             <SectionElec form={form} update={update} />
             <SectionDiesel form={form} update={update} />
             <SectionRecap form={form} />
-            <SectionCharts ecoScore={ecoScore} fleetByType={fleetByType} costComparison={costComparison} />
-            <SectionActions ecoScore={ecoScore} actions={actions} openAction={openAction} setOpenAction={setOpenAction} />
+            <SectionCharts ecoScore={ecoScore} fleetByType={fleetByType} costComparison={costComparison} gncStationCost={gncStationCost} />
           </div>
         )}
       </main>

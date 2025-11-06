@@ -158,6 +158,92 @@ export function useFormData(form) {
     };
   }, [form.fleet.vehicleTypes]);
 
-  return { fleetByType, energyPerType, ecoScore, costComparison };
+  // Calcul du coût de la station GNC
+  const gncStationCost = useMemo(() => {
+    const bioGNCVehicles = form.fleet.vehicleTypes.filter(v => v.type === "bioGNC");
+    if (bioGNCVehicles.length === 0) {
+      return null;
+    }
+
+    // Calculer la consommation totale de GNC
+    let totalConsumption_kg_per_year = 0;
+    for (const v of bioGNCVehicles) {
+      const count = Number(v.count || 0);
+      const kmPerVehPerYear = Number(v.distancePerYearPerVehicle_km || 0);
+      const cons_kg_per_100km = Number(v.cons_kg_per_100km || 8.5);
+      const kmTot = count * kmPerVehPerYear;
+      totalConsumption_kg_per_year += (cons_kg_per_100km * kmTot) / 100;
+    }
+
+    // Coûts de base (estimations)
+    const baseCompressorCost = 150000; // € HT - Compresseur de base
+    const baseStorageCost = 80000; // € HT - Stockage 1 banc
+    const baseDispenserCost = 50000; // € HT - Borne de base
+    const installationCost = 30000; // € HT - Installation
+
+    // Coûts variables selon les options
+    let compressorCost = baseCompressorCost;
+    if (form.optionsGNC.compressorRedundancy) {
+      compressorCost *= 2; // Redondance = 2 compresseurs
+    }
+    if (form.optionsGNC.containerizedCompressorBlock) {
+      compressorCost += 20000; // Containerisation
+    }
+
+    let storageCost = baseStorageCost;
+    if (form.optionsGNC.storage3Banks) {
+      storageCost = baseStorageCost * 3; // 3 bancs de stockage
+    }
+
+    let dispenserCost = baseDispenserCost;
+    if (form.optionsGNC.NGV2_fastCharge) {
+      dispenserCost += 15000; // NGV2 charge rapide
+    }
+    if (form.optionsGNC.semiRapidBackup) {
+      dispenserCost += 30000; // Borne semi-rapide backup
+    }
+
+    // Options supplémentaires
+    let optionsCost = 0;
+    if (form.optionsGNC.soundInsulation_A1R90) {
+      optionsCost += 15000; // Isolation phonique
+    }
+    if (form.optionsGNC.dryer) {
+      optionsCost += 25000; // Sécheur
+    }
+    if (form.optionsGNC.placeLighting) {
+      optionsCost += 5000; // Éclairage
+    }
+
+    // Coût total d'investissement
+    const totalInvestment = compressorCost + storageCost + dispenserCost + installationCost + optionsCost;
+
+    // Coût de maintenance annuel (2-3% de l'investissement)
+    const annualMaintenanceCost = totalInvestment * 0.025;
+
+    // Amortissement sur la durée spécifiée
+    const depreciationYears = Number(form.otherInputs.stationDepreciation_years || 10);
+    const annualDepreciation = totalInvestment / depreciationYears;
+
+    // Coût annuel total de la station
+    const annualStationCost = annualMaintenanceCost + annualDepreciation;
+
+    return {
+      totalInvestment: Math.round(totalInvestment),
+      annualMaintenanceCost: Math.round(annualMaintenanceCost),
+      annualDepreciation: Math.round(annualDepreciation),
+      annualStationCost: Math.round(annualStationCost),
+      breakdown: {
+        compressor: Math.round(compressorCost),
+        storage: Math.round(storageCost),
+        dispenser: Math.round(dispenserCost),
+        installation: Math.round(installationCost),
+        options: Math.round(optionsCost),
+      },
+      totalConsumption_kg_per_year: Math.round(totalConsumption_kg_per_year),
+    };
+  }, [form.fleet.vehicleTypes, form.optionsGNC, form.otherInputs.stationDepreciation_years]);
+
+  return { fleetByType, energyPerType, ecoScore, costComparison, gncStationCost };
 }
 

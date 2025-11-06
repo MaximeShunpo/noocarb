@@ -2,7 +2,7 @@ import { Card } from "../ui";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, XAxis, YAxis, CartesianGrid, Bar, Legend } from "recharts";
 import { COLORS } from "../../constants/theme";
 
-export default function SectionCharts({ ecoScore, fleetByType, costComparison }) {
+export default function SectionCharts({ ecoScore, fleetByType, costComparison, gncStationCost }) {
   // Préparer les données pour le graphique de comparaison des coûts
   const costComparisonData = costComparison?.scenarios?.map((scenario) => ({
     name: scenario.name,
@@ -142,6 +142,86 @@ export default function SectionCharts({ ecoScore, fleetByType, costComparison })
                 </ResponsiveContainer>
               </div>
             </div>
+          )}
+
+          {/* Coût de la station GNC */}
+          {gncStationCost && (
+            <>
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <h4 className="mb-4 text-sm font-semibold text-slate-700">Coût de la station GNC</h4>
+                <p className="mb-4 text-xs text-slate-500">
+                  Répartition des coûts d'investissement et d'exploitation de la station GNC pour la flotte bioGNC
+                </p>
+                <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  <div className="rounded-lg bg-slate-50 p-3">
+                    <div className="text-xs text-slate-500">Investissement total</div>
+                    <div className="text-lg font-bold text-slate-900">{formatCurrency(gncStationCost.totalInvestment)}</div>
+                  </div>
+                  <div className="rounded-lg bg-slate-50 p-3">
+                    <div className="text-xs text-slate-500">Coût annuel</div>
+                    <div className="text-lg font-bold text-slate-900">{formatCurrency(gncStationCost.annualStationCost)}</div>
+                  </div>
+                  <div className="rounded-lg bg-slate-50 p-3">
+                    <div className="text-xs text-slate-500">Maintenance annuelle</div>
+                    <div className="text-lg font-bold text-slate-900">{formatCurrency(gncStationCost.annualMaintenanceCost)}</div>
+                  </div>
+                  <div className="rounded-lg bg-slate-50 p-3">
+                    <div className="text-xs text-slate-500">Consommation GNC</div>
+                    <div className="text-lg font-bold text-slate-900">{gncStationCost.totalConsumption_kg_per_year.toLocaleString()} kg/an</div>
+                  </div>
+                </div>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart 
+                      data={[
+                        { name: "Compresseur", value: gncStationCost.breakdown.compressor },
+                        { name: "Stockage", value: gncStationCost.breakdown.storage },
+                        { name: "Borne", value: gncStationCost.breakdown.dispenser },
+                        { name: "Installation", value: gncStationCost.breakdown.installation },
+                        { name: "Options", value: gncStationCost.breakdown.options },
+                      ]} 
+                      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis tickFormatter={(value) => `${(value / 1000).toFixed(0)}k€`} />
+                      <Tooltip 
+                        formatter={(value) => formatCurrency(value)}
+                        labelStyle={{ color: "#334155" }}
+                      />
+                      <Bar dataKey="value" fill="#10B981" name="Coût (€)" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <h4 className="mb-4 text-sm font-semibold text-slate-700">Coûts annuels de la station GNC</h4>
+                <p className="mb-4 text-xs text-slate-500">
+                  Répartition des coûts annuels : amortissement et maintenance
+                </p>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart 
+                      data={[
+                        { name: "Amortissement", value: gncStationCost.annualDepreciation },
+                        { name: "Maintenance", value: gncStationCost.annualMaintenanceCost },
+                      ]} 
+                      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis tickFormatter={(value) => `${(value / 1000).toFixed(0)}k€`} />
+                      <Tooltip 
+                        formatter={(value) => formatCurrency(value)}
+                        labelStyle={{ color: "#334155" }}
+                      />
+                      <Bar dataKey="value" fill="#0EA5E9" name="Coût annuel (€)" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </Card>

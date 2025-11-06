@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr"> <!-- TODO BACK Variabiliser la lang -->
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link href="https://www.grdf.fr/o/grdf-theme/images/favicon.ico" rel="Shortcut Icon">
+    <title>Error 404</title> <!-- TODO BACK Variabliser le titre de la page -->
+
+    <link rel="stylesheet" href="/nonTrouve/scss/error-404.css">
+    <script>
+        document.createElement("picture");
+    </script>
+    <script src="/nonTrouve/libs/polyfills/picturefill.min.js" async></script>
+	
+	<script type="text/javascript">
+		function initBack()
+		{
+		  var p = document.getElementsByClassName("btnRetour");
+		  // NOTE: showAlert(); ou showAlert(param); NE fonctionne PAS ici.
+		  // Il faut fournir une valeur de type function (nom de fonction déclaré ailleurs ou declaration en ligne de fonction).
+		  p.onclick = history.back();
+		};
+		
+		function initAccueil(){
+		  var p = document.getElementsByClassName("btnAccueil");
+		  // NOTE: showAlert(); ou showAlert(param); NE fonctionne PAS ici.
+		  // Il faut fournir une valeur de type function (nom de fonction déclaré ailleurs ou declaration en ligne de fonction).
+		  window.location.replace("/");
+		}
+		
+		function initRecherche(){
+		  var p = document.getElementsByClassName("btnRecherche");
+		  // NOTE: showAlert(); ou showAlert(param); NE fonctionne PAS ici.
+		  // Il faut fournir une valeur de type function (nom de fonction déclaré ailleurs ou declaration en ligne de fonction).
+		  window.location.replace("/recherche");
+		}
+	</script>
+</head>
+
+<style>
+.btnRetour, .btnAccueil, .btnRecherche {
+	cursor: pointer;
+}
+</style>
+
+<body>
+<div id="error-404-main-container">
+    <main id="main" role="main" tabindex="-1">
+        <div class="error-404-logo-grdf">
+
+            <a href=""> <!-- TODO Back insérer url de la homepage -->
+                <picture>
+                    <source class="error-404-logo-img" srcset="/nonTrouve/img/grdf-mobile.svg" media="(max-width: 1339px)">
+                    <source class="error-404-logo-img" srcset="/nonTrouve/img/grdf-tablette.svg" media="(min-width: 1440px)">
+                    <img class="error-404-logo-img" role="img" srcset="/nonTrouve/img/grdf-mobile.svg" alt="Gaz Réseau Distribution France (GRDF) - XXX"> <!-- TODO BACK modifier XXX par le nom de la page ciblé / à traduire -->
+                </picture>
+            </a>
+
+        </div>
+
+        <div class="error-404-block-paragraph">
+            <h1>
+                <span class="error-404-subtitle d-flex">ERREUR 404 - Page introuvable</span>
+                <span class="error-404-title-1 d-flex">Désolé, on n'a rien dans nos tuyaux !</span>
+            </h1>
+            <p class="error-404-paragraph">
+                Vérifiez que le lien de la page est correct.<br>
+                La page a peut-être été déplacée, supprimée ou bien elle n'existe pas.
+            </p>
+        </div>
+
+        <div class="error-404-btns">
+            <ul class="error-404-btns-column">
+
+                <li>
+                    <button onclick="initBack()" type="submit" class="error-404-btn-2 btnRetour">
+                        <span class="uil-arrow-left peacock-blue icons-margin" aria-hidden="true"></span>
+                        <span class="black">Retourner à la page précédente</span>
+                    </button>
+                </li>
+
+                <li>
+                    <button onclick="initAccueil()" type="submit" class="error-404-btn-2 btnAccueil">
+                        <span class="uil-home-alt peacock-blue icons-margin" aria-hidden="true"></span>
+                        <span class="black">Accéder à la page d'accueil</span>
+                    </button>
+                </li>
+
+                <!-- 20230412 - Commenté en attendant le retour du moteur de recherche
+                <li>
+                    <button onclick="initRecherche()" type="submit" class="error-404-btn btnRecherche">
+                        <span class="uil-search icons-margin" aria-hidden="true"></span>
+                        <span>Utiliser le moteur de recherche</span>
+                    </button>
+                </li>
+                -->
+            </ul>
+        </div>
+    </main>	
+</div>
+</body>
+</html>
+                

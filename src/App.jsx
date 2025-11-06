@@ -39,18 +39,13 @@ export default function App() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <img 
-              src="https://www.grdf.fr/sites/default/files/logo-grdf.png" 
+              src="https://upload.wikimedia.org/wikipedia/fr/thumb/a/a3/Logo_GRDF_couleur_sans_descripteur_2024%28PNG%29.png/2560px-Logo_GRDF_couleur_sans_descripteur_2024%28PNG%29.png" 
               alt="GRDF" 
               className="h-12 w-auto object-contain"
-              onError={(e) => {
-                // Fallback vers le fichier local si l'URL publique ne charge pas
-                console.error("Erreur de chargement du logo GRDF depuis l'URL publique, tentative avec le fichier local");
-                e.target.src = "/assets/grdf-logo.png";
-              }}
             />
-            <div>
+          <div>
               <h1 className="text-2xl font-bold tracking-tight text-slate-900">Config mobilité & options</h1>
-              <p className="mt-1 text-sm text-slate-500">Ajoutez vos types de véhicules, renseignez les paramètres et validez.</p>
+            <p className="mt-1 text-sm text-slate-500">Ajoutez vos types de véhicules, renseignez les paramètres et validez.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
